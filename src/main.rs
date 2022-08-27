@@ -140,7 +140,7 @@ fn hyp1f1_series (a:f64,b:f64,z:f64,EPS:f64) -> f64 { // taken from scipy source
 
 
 fn main() {
-    const EPS: f64 = 2.2e-18;
+    const EPS: f64 = 2.2e-16;
     //println!("{}",hyp1f1_series(2.5,5.33,6.4,EPS));
     //println!("{}",hyp1f1_series_track_convergence(2.5,5.33,6.4,EPS));
     //println!("{}",hyp1f1(2.5,5.33,6.4,EPS));
