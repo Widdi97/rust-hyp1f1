@@ -1,5 +1,6 @@
 // based on https://people.maths.ox.ac.uk/porterm/papers/hypergeometric-final.pdf
 // use statrs::function::gamma;
+use rand::{Rng, thread_rng};
 
 
 
@@ -33,10 +34,9 @@ fn poch (z:f64,k:i64) -> f64 {
     }
 }
 
-fn hyp1f1_slow (a:f64,b:f64,z:f64) -> f64 { // inefficient
+fn hyp1f1_slow (a:f64,b:f64,z:f64,EPS:f64) -> f64 { // inefficient, but used for back-testing
     let mut result = 0.0;
     const NMAX: i64 = 100;
-    const EPS: f64 = 2.2e-16;
     let mut a_j: f64;
     for j in 0..=NMAX {
         a_j = poch(a,j) / poch(b,j) / gamma((j+1) as f64) * f64::powi(z, j as i32);
@@ -140,17 +140,24 @@ fn hyp1f1_series (a:f64,b:f64,z:f64,EPS:f64) -> f64 { // taken from scipy source
 
 
 fn main() {
-    println!("{}",hyp1f1_series(2.5,5.33,6.4,EPS));
-    println!("{}",hyp1f1_series_track_convergence(2.5,5.33,6.4,EPS));
-    println!("{}",hyp1f1(2.5,5.33,6.4,EPS));
+    const EPS: f64 = 2.2e-18;
+    //println!("{}",hyp1f1_series(2.5,5.33,6.4,EPS));
+    //println!("{}",hyp1f1_series_track_convergence(2.5,5.33,6.4,EPS));
+    //println!("{}",hyp1f1(2.5,5.33,6.4,EPS));
+    
+    // test equal
+    for _ii in 0..100 {
+        let a: f64 = thread_rng().gen_range(-0.0..20.0);
+        let b: f64 = thread_rng().gen_range(-0.0..20.0);
+        let z: f64 = thread_rng().gen_range(0.0..80.0);
+        println!("{a},{b},{z},{}",hyp1f1(a,b,z,EPS));
+        println!("{a},{b},{z},{},\n",hyp1f1_slow(a,b,z,EPS));
+    }
 
     let now = std::time::Instant::now();
-    const EPS: f64 = 2.2e-16;
-
     for _ii in 0..100000 {
         hyp1f1(2.5,5.33,6.4,EPS);
     }
-
     let elapsed_time = now.elapsed();
     println!("Running slow_function() took {} ms.", elapsed_time.as_millis());
 }
