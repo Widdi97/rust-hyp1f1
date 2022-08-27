@@ -49,11 +49,81 @@ fn hyp1f1_slow (a:f64,b:f64,z:f64) -> f64 { // inefficient
     result
 }
 
-fn hyp1f1_series (a:f64,b:f64,z:f64) -> f64 { // taken from scipy source code https://github.com/scipy/scipy/blob/main/scipy/special/_hypergeometric.pxd
-    let mut k: f64;
+fn hyp1f1 (a:f64,b:f64,z:f64,EPS:f64) -> f64 { // taken from scipy source code https://github.com/scipy/scipy/blob/main/scipy/special/_hypergeometric.pxd
+    if a == f64::NAN || b == f64::NAN || z == f64::NAN {
+        return f64::NAN
+    }
+    if b <= 0.0 && b == b.floor() {
+        if b <= a && a < 0.0 && a == a.floor() {
+            return hyp1f1_series_track_convergence(a, b, z, EPS)
+        } else {
+            return f64::INFINITY
+        }
+    } else if a == 0.0 || z == 0.0 {
+        return 1.0
+    } else if a == -1.0 {
+        return 1.0 - z / b
+    } else if a == b {
+        return f64::powf(std::f64::consts::E,z)
+    } else if a - b == 1.0 {
+        return (1.0 + z / b) * f64::powf(std::f64::consts::E,z)
+    } else if a == 1.0 && b == 2.0 {
+        return (f64::powf(std::f64::consts::E,z) - 1.0) / z
+    } else if a <= 0.0 && a == a.floor() {
+        return hyp1f1_series_track_convergence(a, b, z, EPS)
+    }
+
+    if b > 0.0 && (a.abs() + 1.0) * z.abs() < 0.9 * b {
+        return hyp1f1_series(a, b, z, EPS)
+    }
+    //println!("fortran library with hyp1f1_wrap() not implemented. Instead using hyp1f1_series()");
+    return hyp1f1_series(a, b, z, EPS)
+}
+
+
+
+fn hyp1f1_series_track_convergence (a:f64,b:f64,z:f64,EPS:f64) -> f64 { // taken from scipy source code https://github.com/scipy/scipy/blob/main/scipy/special/_hypergeometric.pxd
+    let mut apk: f64;
+    let mut bpk: f64;
     let mut term: f64 = 1.0;
     let mut result = 1.0;
-    const EPS: f64 = 2.2e-16;
+    let mut abssum = 1.0;
+    let mut k: i32 = 0;
+    let mut kfloat = 0.0;
+    for k in 0..1000 {
+        kfloat = k as f64;
+        apk = a + kfloat;
+        bpk = b + kfloat;
+        if bpk != 0.0 {
+            term *= apk * z / bpk / (kfloat + 1.0);
+        } else if apk == 0.0 {
+            term = 0.0;
+        } else {
+            return f64::NAN
+        }
+        abssum += term.abs();
+        result += term;
+        if term.abs() <= EPS * result.abs() {
+            break;
+        }
+    }
+    if k == 1000 {
+        println!("series not converging");
+        return f64::NAN
+    }
+    if kfloat * EPS * abssum <= 1e-7 * result.abs() {
+        return result
+    }
+    else {
+        println!("series not converging 2");
+        return f64::NAN
+    }
+}
+
+
+fn hyp1f1_series (a:f64,b:f64,z:f64,EPS:f64) -> f64 { // taken from scipy source code https://github.com/scipy/scipy/blob/main/scipy/special/_hypergeometric.pxd
+    let mut term: f64 = 1.0;
+    let mut result = 1.0;
     let mut kfloat;
     for k in 0..500 {
         kfloat = k as f64;
@@ -63,7 +133,6 @@ fn hyp1f1_series (a:f64,b:f64,z:f64) -> f64 { // taken from scipy source code ht
             break;
         }
     }
-
     result
 }
 
@@ -71,12 +140,15 @@ fn hyp1f1_series (a:f64,b:f64,z:f64) -> f64 { // taken from scipy source code ht
 
 
 fn main() {
-    println!("{}",hyp1f1(2.5,5.33,6.4));
+    println!("{}",hyp1f1_series(2.5,5.33,6.4,EPS));
+    println!("{}",hyp1f1_series_track_convergence(2.5,5.33,6.4,EPS));
+    println!("{}",hyp1f1(2.5,5.33,6.4,EPS));
 
     let now = std::time::Instant::now();
+    const EPS: f64 = 2.2e-16;
 
-    for _ii in 0..10000 {
-        hyp1f1(2.5,5.33,6.4);
+    for _ii in 0..100000 {
+        hyp1f1(2.5,5.33,6.4,EPS);
     }
 
     let elapsed_time = now.elapsed();
