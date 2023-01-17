@@ -147,9 +147,9 @@ fn main() {
     
     // test equal
     for _ii in 0..100 {
-        let a: f64 = thread_rng().gen_range(-0.0..20.0);
-        let b: f64 = thread_rng().gen_range(-0.0..20.0);
-        let z: f64 = thread_rng().gen_range(0.0..80.0);
+        let a: f64 = thread_rng().gen_range(-5.0..-1.0);
+        let b: f64 = thread_rng().gen_range(1.0..6.0);
+        let z: f64 = thread_rng().gen_range(0.0..60.0);
         println!("{a},{b},{z},{}",hyp1f1(a,b,z,EPS));
         println!("{a},{b},{z},{},\n",hyp1f1_slow(a,b,z,EPS));
     }
